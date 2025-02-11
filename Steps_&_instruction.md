@@ -345,31 +345,9 @@ nano app.py
 - **Add the Following Code**:
 
   ```python
-  from flask import Flask, render_template
-  import platform
-  import psutil
-
-  app = Flask(__name__)
-
-  @app.route('/')
-  def index():
-      info = {
-          'Hostname': platform.node(),
-          'System': platform.system(),
-          'Release': platform.release(),
-          'Version': platform.version(),
-          'Machine': platform.machine(),
-          'Processor': platform.processor(),
-          'CPU Cores': psutil.cpu_count(logical=False),
-          'Total RAM': f"{round(psutil.virtual_memory().total / (1024**3), 2)} GB",
-          'IP Address': psutil.net_if_addrs()['enp0s3'][0].address
-      }
-      return render_template('index.html', info=info)
-
-  if __name__ == '__main__':
-      app.run(host='0.0.0.0', port=5000)
+  code in file 
   ```
-
+[Python code file](https://github.com/ashcrows/IITJ_G24AI1067_VCC/blob/main/app.py)
 - **Note**: Replace `'enp0s3'` with your actual network interface name if different not the newtork name `'Wired Connection 1'` or `'Wired Connection 2'`.
 
 #### **4. Create Templates Directory and `index.html`**
@@ -382,70 +360,9 @@ nano templates/index.html
 - **Add the Following HTML**:
 
   ```html
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <title>System Information</title>
-      <style>
-          body {
-              font-family: Arial, sans-serif;
-              background-color: #f0f0f0;
-              margin: 0;
-              padding: 0;
-          }
-          .container {
-              width: 80%;
-              margin: auto;
-              overflow: hidden;
-          }
-          header {
-              background: #50b3a2;
-              color: #ffffff;
-              padding-top: 30px;
-              min-height: 70px;
-              border-bottom: #e8491d 3px solid;
-          }
-          header h1 {
-              text-align: center;
-              margin: 0;
-              text-transform: uppercase;
-              font-size: 24px;
-          }
-          table {
-              width: 100%;
-              margin: 20px 0;
-              border-collapse: collapse;
-          }
-          table, th, td {
-              border: 1px solid #dddddd;
-          }
-          th, td {
-              padding: 8px;
-              text-align: left;
-          }
-          tr:nth-child(even) {
-              background-color: #f2f2f2;
-          }
-      </style>
-  </head>
-  <body>
-      <header>
-          <h1>System Information</h1>
-      </header>
-      <div class="container">
-          <table>
-              {% for key, value in info.items() %}
-              <tr>
-                  <th>{{ key }}</th>
-                  <td>{{ value }}</td>
-              </tr>
-              {% endfor %}
-          </table>
-      </div>
-  </body>
-  </html>
+  code
   ```
-
+[HTML code file](https://github.com/ashcrows/IITJ_G24AI1067_VCC/blob/main/templates/index.html)
 #### **5. Run the Microservice**
 
 ```bash
