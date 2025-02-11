@@ -15,10 +15,14 @@ This guide covers the steps to set up three Fedora VMs using VirtualBox. VM1 and
 ### **Network Topology**
 
 ```
-[VM1]  <--->  [VM3 (Gateway)]  <--->  [VM2]
-                  | |           
-                  | |           
-       <------ Internet ------>
+________________________________________________
+|                 (Firewall)                   |
+| [VM1]  <--->  [VM3 (Gateway)]  <--->  [VM2]  |
+|                   | |                        | 
+|                   | |                        |
+|___________________|_|________________________|
+                    | |
+         <------ Internet ------>
 ```
 
 ---
@@ -45,7 +49,7 @@ We'll create three VMs: **VM1**, **VM2**, and **VM3 (Gateway)**.
 #### **1. Create VM1**
 
 - **Open VirtualBox** and click on **“New”**.
-- **Name**: `Fedora_VM1`.
+- **Name**: `VM_fedora_1`.
 - **Type**: `Linux`.
 - **Version**: `Fedora (64-bit)`.
 - **Memory Size**: Allocate at least **2048 MB** (2 GB).
@@ -56,11 +60,11 @@ We'll create three VMs: **VM1**, **VM2**, and **VM3 (Gateway)**.
 
 #### **2. Create VM2**
 
-- **Repeat the steps above**, naming this VM `Fedora_VM2`.
+- **Repeat the steps above**, naming this VM `VM_fedora_2`.
 
 #### **3. Create VM3 (Gateway)**
 
-- **Create a new VM** named `Fedora_VM3_Gateway` following the same steps.
+- **Create a new VM** named `VM_Fedora_Gateway` following the same steps.
 
 ---
 
@@ -85,7 +89,7 @@ We'll create three VMs: **VM1**, **VM2**, and **VM3 (Gateway)**.
   - **Installation Destination**: Use default settings unless you prefer custom partitioning.
 - **User Creation**:
   - **Root Password**: Set a strong password.
-  - **User Account**: Create a user (e.g., `fedorauser`) with administrator privileges.
+  - **User Account**: Create a user (e.g., `vm_fedora_1`) with administrator privileges.
 - **Complete Installation** and **Reboot**.
 
 #### **3. Update Each VM**
@@ -151,8 +155,8 @@ We'll assign static IP addresses to each VM using `nmcli`.
 
   ```bash
   sudo nmcli connection modify 'Wired connection 1' \
-  ipv4.addresses 192.168.56.10/24 \
-  ipv4.gateway 192.168.56.1 \
+  ipv4.addresses 192.168.56.101/24 \
+  ipv4.gateway 192.168.56.100 \
   ipv4.dns 8.8.8.8 \
   ipv4.method manual
   ```
@@ -173,7 +177,7 @@ We'll assign static IP addresses to each VM using `nmcli`.
 - **Check Connectivity**:
 
   ```bash
-  ping -c 4 192.168.56.1
+  ping -c 4 192.168.56.100
   ```
 
 #### **3. Configure VM2**
@@ -182,8 +186,8 @@ We'll assign static IP addresses to each VM using `nmcli`.
 
   ```bash
   sudo nmcli connection modify 'Wired connection 1' \
-  ipv4.addresses 192.168.56.20/24 \
-  ipv4.gateway 192.168.56.1 \
+  ipv4.addresses 192.168.56.102/24 \
+  ipv4.gateway 192.168.56.100 \
   ipv4.dns 8.8.8.8 \
   ipv4.method manual
   ```
@@ -204,17 +208,17 @@ We'll assign static IP addresses to each VM using `nmcli`.
 - **Check Connectivity**:
 
   ```bash
-  ping -c 4 192.168.56.1
+  ping -c 4 192.168.56.100
   ```
 
 #### **4. Configure VM3 (Gateway)**
 
-- **Connection Name**: Use the one associated with the internal interface (`enp0s3`).
+- **Connection Name**: Use the one associated with the internal interface (`enp0s8`).
 - **Set a Static IP**:
 
   ```bash
   sudo nmcli connection modify 'Wired connection 1' \
-  ipv4.addresses 192.168.56.1/24 \
+  ipv4.addresses 192.168.56.100/24 \
   ipv4.method manual
   ```
 
@@ -272,16 +276,16 @@ We need VM3 to act as a router, forwarding traffic from VM1 and VM2 to the Inter
   ip addr
   ```
 
-  - **External Interface**: Connected to NAT (e.g., `enp0s8`).
-  - **Internal Interface**: Connected to `intnet` (e.g., `enp0s3`).
+  - **External Interface**: Connected to NAT (e.g., `enp0s3`).
+  - **Internal Interface**: Connected to `intnet` (e.g., `enp0s8`).
 
 - **Add NAT Rules**:
 
   ```bash
-  # Replace 'enp0s8' and 'enp0s3' with your actual interface names
-  sudo firewall-cmd --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -o enp0s8 -j MASQUERADE
-  sudo firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i enp0s3 -o enp0s8 -j ACCEPT
-  sudo firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i enp0s8 -o enp0s3 -m state --state RELATED,ESTABLISHED -j ACCEPT
+  # Replace 'enp0s3' and 'enp0s8' with your actual interface names
+  sudo firewall-cmd --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -o enp0s3 -j MASQUERADE
+  sudo firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i enp0s8 -o enp0s3 -j ACCEPT
+  sudo firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT
   ```
 
 - **Reload Firewall Configuration**:
@@ -299,7 +303,7 @@ We need VM3 to act as a router, forwarding traffic from VM1 and VM2 to the Inter
 - **From VM1 and VM2**:
 
   ```bash
-  ping -c 4 192.168.56.1
+  ping -c 4 192.168.56.100
   ```
 
 #### **2. Test Internet Access**
@@ -366,7 +370,7 @@ nano app.py
       app.run(host='0.0.0.0', port=5000)
   ```
 
-- **Note**: Replace `'enp0s3'` with your actual network interface name if different.
+- **Note**: Replace `'enp0s3'` with your actual network interface name if different not the newtork name `'Wired Connection 1'` or `'Wired Connection 2'`.
 
 #### **4. Create Templates Directory and `index.html`**
 
@@ -457,24 +461,24 @@ python3 app.py
 #### **1. On VM1**
 
 - **Open Firefox**.
-- **Navigate to**: `http://localhost:5000` or `http://192.168.56.10:5000`.
+- **Navigate to**: `http://localhost:5000` or `http://192.168.56.101:5000`.
 - **View**: The styled web page displaying system information.
 
 #### **2. On VM2**
 
 - **Open Firefox**.
-- **Navigate to**: `http://localhost:5000` or `http://192.168.56.20:5000`.
+- **Navigate to**: `http://localhost:5000` or `http://192.168.56.100:5000`.
 - **View**: The styled web page displaying system information.
 
 #### **3. Access Each Other's Microservice**
 
 - **From VM1**, access VM2:
 
-  - **Navigate to**: `http://192.168.56.20:5000`.
+  - **Navigate to**: `http://192.168.56.102:5000`.
 
 - **From VM2**, access VM1:
 
-  - **Navigate to**: `http://192.168.56.10:5000`.
+  - **Navigate to**: `http://192.168.56.101:5000`.
 
 ---
 
@@ -492,8 +496,8 @@ python3 app.py
 - **Add Rich Rules to Firewalld**:
 
   ```bash
-  sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.56.10" accept'
-  sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.56.20" accept'
+  sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.56.101" accept'
+  sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.56.102" accept'
   sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" drop'
   sudo firewall-cmd --reload
   ```
@@ -510,7 +514,7 @@ python3 app.py
   traceroute -m 5 google.com
   ```
 
-- **Expected Output**: The first hop should be `192.168.56.1` (VM3).
+- **Expected Output**: The first hop should be `192.168.56.100` (VM3).
 
 #### **4. Disable SSH Access if Not Needed**
 
@@ -540,7 +544,7 @@ python3 app.py
 - **Attempt to Ping VM3**:
 
   ```bash
-  ping -c 4 192.168.56.1
+  ping -c 4 192.168.56.100
   ```
 
 - **Expected**: No response, confirming that VM3 is not accessible.
@@ -563,53 +567,6 @@ python3 app.py
 
 ---
 
-### **Step 12: Automate Microservice Startup (Optional)**
-
-To ensure the microservice starts on boot.
-
-#### **1. Create a Systemd Service File**
-
-- **On VM1 and VM2**:
-
-  ```bash
-  sudo nano /etc/systemd/system/microservice.service
-  ```
-
-- **Add the Following Content**:
-
-  ```ini
-  [Unit]
-  Description=Python Microservice
-  After=network.target
-
-  [Service]
-  User=YOUR_USERNAME
-  WorkingDirectory=/home/YOUR_USERNAME/microservice
-  ExecStart=/usr/bin/python3 app.py
-  Restart=always
-
-  [Install]
-  WantedBy=multi-user.target
-  ```
-
-- **Replace `YOUR_USERNAME`** with your actual username.
-
-#### **2. Enable and Start the Service**
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable microservice.service
-sudo systemctl start microservice.service
-```
-
-- **Check Status**:
-
-  ```bash
-  sudo systemctl status microservice.service
-  ```
-
----
-
 ## **Final Verification**
 
 - **VM1 and VM2** should have:
@@ -622,33 +579,9 @@ sudo systemctl start microservice.service
 
 ---
 
-## **Additional Tips and Considerations**
-
-### **1. Security Enhancements**
-
-- **Use SSH Keys**:
-  - For secure remote access between VMs if needed.
-- **Firewall Rules**:
-  - Regularly review firewall rules to ensure they meet your security requirements.
-- **Updates**:
-  - Keep all VMs updated:
-
-    ```bash
-    sudo dnf update -y
-    ```
-
-### **2. Scaling the Setup**
-
-- **Containerization**:
-  - Consider using Docker to containerize your microservice for easier deployment and management.
-- **Monitoring Tools**:
-  - Implement monitoring solutions like **Prometheus** and **Grafana** for real-time metrics.
-
----
-
 ## **Conclusion**
 
-You've now successfully:
+We've now successfully:
 
 - Set up three Fedora VMs in VirtualBox with accurate and corrected network configurations.
 - Deployed a Python microservice application on VM1 and VM2 that communicates and displays hardware details.
@@ -657,4 +590,4 @@ You've now successfully:
 
 ---
 
-Feel free to reach out if you have any questions or need further assistance with any of the steps. Enjoy exploring your new virtual environment!
+Feel free to reach out if you have any questions or suggestions or need further assistance with any of the steps. Enjoy exploring your setting up virtual environment!
